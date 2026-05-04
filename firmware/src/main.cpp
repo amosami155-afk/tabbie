@@ -53,6 +53,7 @@ void handleRobotIcon();
 
 void drawFace(String mood);
 void drawRobotIcon(String type);
+void handleRobotAction();
 void drawIdleEyes(bool eyesOpen, int lookOffset);
 void handleIdleAnimation();
 void beep(int times);
@@ -60,7 +61,6 @@ void successSound();
 void focusSound();
 void reminderSound();
 void updateRobot();
-
 void setup() {
   Serial.begin(115200);
   delay(500);
@@ -189,7 +189,7 @@ void setupWebServer() {
   server.on("/api/animation", HTTP_POST, handleRobotIcon);
   server.on("/emoji", HTTP_GET, handleRobotIcon);
   server.on("/emoji", HTTP_POST, handleRobotIcon);
-
+  server.on("/api/robot/action", HTTP_POST, handleRobotAction);
   server.begin();
   Serial.println("Server started");
 }
@@ -1224,7 +1224,66 @@ void handleReset() {
   delay(1000);
   ESP.restart();
 }
+void handleRobotAction() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
 
+  String body = server.arg("plain");
+  String action = "idle";
+
+  if (body.indexOf("task_created") >= 0) {
+    action = "add";
+  } 
+  else if (body.indexOf("task_started") >= 0) {
+    action = "start";
+  } 
+  else if (body.indexOf("task_completed") >= 0) {
+    action = "done";
+  } 
+  else if (body.indexOf("focus_started") >= 0) {
+    action = "focus";
+  } 
+  else if (body.indexOf("focus_finished") >= 0) {
+    action = "done";
+  } 
+  else if (body.indexOf("note_created") >= 0) {
+    action = "note";
+  } 
+  else if (body.indexOf("reminder_alert") >= 0) {
+    action = "reminder";
+  } 
+  else if (body.indexOf("idle") >= 0) {
+    action = "idle";
+  }
+
+  Serial.println("Robot Action Body: " + body);
+  Serial.println("Robot Action Mapped To: " + action);
+
+  currentMood = action;
+
+  if (action == "focus") {
+    moodUntil = millis() + 5000;
+    focusSound();
+  } 
+  else if (action == "done") {
+    moodUntil = millis() + 3500;
+    successSound();
+  } 
+  else if (action == "reminder" || action == "start") {
+    moodUntil = millis() + 5000;
+    reminderSound();
+  } 
+  else if (action == "idle") {
+    moodUntil = 0;
+    drawFace("idle");
+  } 
+  else {
+    moodUntil = millis() + 3000;
+  }
+
+  server.send(200, "application/json", "{\"ok\":true,\"action\":\"" + action + "\"}");
+}
 
 void handleRobotIcon() {
   String type = "idle";
