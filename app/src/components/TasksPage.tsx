@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Slider } from '@/components/ui/slider';
+import { sendRobotAction } from "@/lib/robotApi";
 import {
   Select,
   SelectContent,
